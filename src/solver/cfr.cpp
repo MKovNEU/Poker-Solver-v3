@@ -125,18 +125,17 @@ void build_run(Tree &tree, State &game_state, uint32_t parent_idx, uint32_t pare
     else { //action node
         std::vector<Action> actions = game_state.get_legal_actions();
         int num_actions = actions.size();
-        std::pair<std::vector<int>, int> global_to_local = game_state.get_private_hands();
         int board_idx = game_state.get_board_index();
         if (game_state.is_river()) {
             Node parent_node = tree.nodes[parent_idx];
             if (parent_node.type == NodeType::CHANCE) { //first river node, make hand strength ranking
-                node_idx = add_first_river_action_node(tree, board_idx, num_actions, global_to_local.second, global_to_local.first, game_state.get_board());
+                node_idx = add_first_river_action_node(tree, board_idx, num_actions, game_state.get_board());
             } else { //not first, just copy parents strength ranking
-                node_idx = add_river_action_node(tree, board_idx, num_actions, global_to_local.second, global_to_local.first);
+                node_idx = add_river_action_node(tree, board_idx, num_actions);
             }
         }
         else {
-            node_idx = add_action_node(tree, board_idx, num_actions, global_to_local.second, global_to_local.first);
+            node_idx = add_action_node(tree, board_idx, num_actions);
         }
         for (int i = 0; i < num_actions; i++) {
             UndoInfo undo = game_state.move(actions[i]);

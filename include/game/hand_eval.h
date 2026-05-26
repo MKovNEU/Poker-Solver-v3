@@ -7,4 +7,4 @@
 
 void loadHandRanks(const std::string &path);
 
-int evaluateHand(const std::vector<uint8_t> cards);
+int evaluateHand(const uint64_t hand, const uint64_t board);

@@ -183,7 +183,6 @@ std::pair<std::vector<int>, int> State::get_private_hands() {
 }
 
 int State::get_board_index() {
-    /*
     if (cards.second == 3) {
         return index_board(cards.first);
     } else if (cards.second == 4) {
@@ -193,8 +192,6 @@ int State::get_board_index() {
     } else {
         std::cout << "Bug in get_board_index" << "\n";
     }
-        */
-    return 1300;
 }
 
 float State::get_utility(){

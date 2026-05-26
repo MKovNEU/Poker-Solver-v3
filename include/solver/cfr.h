@@ -22,13 +22,11 @@ public:
         float pot, std::pair<float, float> &stacks, std::vector<std::pair<float, float>> &betting_sizes) : 
         oop_range(oop_range), ip_range(ip_range), flop(flop), state(std::make_pair(pot / 2.0f, pot / 2.0f), stacks, betting_sizes, flop), tree{}
         {
-            /*
             uint64_t cards = 0;
             for (const uint8_t card : flop) {
                 cards |= (1ULL << card);
             }
             tree.set_indexing(cards);
-            */
         }
 
     void buildTree(); 

@@ -7,13 +7,19 @@
 #include<vector>
 #include <unordered_map>
 
-struct ChanceOutcomes {
-    int local_index;
-    uint8_t multiplicity; 
+struct BoardInfo {
+    int local_index; //local board index;
+    int num_private_hands; //num of private hands (using board cards + suit isomorphism)
+    std::vector<int> global_to_local; //global -> local private hand index;
+    std::vector<int> hand_strength; //sorted hand strength of private cards (local index), only created for 
 
-    ChanceOutcomes() : local_index(-1), multiplicity(0) {}
+    BoardInfo() : local_index(-1) {}
 
-    ChanceOutcomes(int index): local_index(index), multiplicity(1) {}
+    BoardInfo(int index, std::vector<int> g2l, int num_private_hands): local_index(index), global_to_local(g2l), 
+        num_private_hands(num_private_hands), hand_strength(std::vector<int>(num_private_hands)) {}
+
+    BoardInfo(int index, std::vector<int> g2l, std::vector<int> hand_str, int num_private_hands): local_index(index), global_to_local(g2l), 
+        num_private_hands(num_private_hands), hand_strength(hand_str) {}
 };
 
 int index_board(uint64_t board);
@@ -26,4 +32,4 @@ void test_board_indexer();
 
 void test_board_hand_indexer();
 
-std::pair<std::unordered_map<int, ChanceOutcomes>, int> get_flop_info(uint64_t flop);
+std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop);

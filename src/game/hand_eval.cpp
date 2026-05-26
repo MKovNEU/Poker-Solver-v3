@@ -15,10 +15,10 @@ void loadHandRanks(const std::string &path) {
 }
 
 
-int evaluateHand(const std::vector<uint8_t> cards) {
+int evaluateHand(const uint64_t hand, const uint64_t board) {
     int p = 53;
-    for (size_t i = 0; i < 7; i++) {
-        p = HR[p + cards[i]];
+    for (size_t i = 0; i < 52; i++) {
+        if ((board >> i) & 1 || (hand >> i) & 1) p = HR[p + (i+1)];
     }
-    return p;
+    return HR[p];
 }
