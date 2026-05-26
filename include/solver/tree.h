@@ -8,7 +8,8 @@
 
 
 struct Tree {
-    std::unordered_map<int, BoardInfo> global_board_to_local; //global -> local index of given boards within flop
+    std::unordered_map<int, int> global_board_to_local; //global -> local index of given boards within flop
+    std::vector<BoardInfo> board_info; //local index -> boardInfo of said board
 
     std::vector<Node> nodes; //actual nodes in tree, accessed through nodes[node_idx]
 
@@ -18,8 +19,9 @@ struct Tree {
     std::vector<_Float16> strategy;
 
     void set_indexing(uint64_t flop) {
-        global_board_to_local = get_flop_info(flop).first;
-        std::cout << global_board_to_local.size();
+        auto info = get_flop_info(flop);
+        global_board_to_local = info.first;
+        board_info = info.second;
     }
 };
 

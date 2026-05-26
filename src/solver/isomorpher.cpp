@@ -41,6 +41,13 @@ bool suit_info_comp2(std::tuple<int, int, int, std::vector<int>>& a, std::tuple<
     return (std::get<0>(a) > std::get<0>(b));
 }
 
+bool hand_str_comp(std::pair<int, int>& a, std::pair<int, int>& b) {
+    if (a.first == b.first) {
+        return a.second > b.second;
+    }
+    return a.first > b.first;
+}
+
 int digit(int num, int digit) {
     return (num / static_cast<int>(std::pow(10, digit))) % 10;
 }
@@ -329,12 +336,12 @@ std::pair<std::vector<int>, int> hand_indexer(uint64_t board) {
     return std::make_pair(global_to_local, local);
 }
 
-std::pair<std::vector<int>, std::vector<int>> river_hand_indexer(uint64_t board) {
+std::pair<std::vector<int>, std::vector<std::pair<int, int>>> river_hand_indexer(uint64_t board) {
     std::unordered_map<int, int> index_to_local;
     int local = 0;
     int global = 0;
     std::vector<int> global_to_local(1326);
-    std::vector<int> hand_strength;
+    std::vector<std::pair<int, int>> hand_strength;
     for (int card_one = 0; card_one < 51; card_one++) {
         for (int card_two = card_one+1; card_two < 52; card_two++) {
             if (((board >> card_one) & 1) || ((board >> card_two) & 1)) {
@@ -349,8 +356,8 @@ std::pair<std::vector<int>, std::vector<int>> river_hand_indexer(uint64_t board)
             if (index_to_local.find(hand_index) == index_to_local.end()) {
                 global_to_local[global] = local;
                 index_to_local[hand_index] = local;
-                int hand_str = evaluateHand(hand, board);
-                hand_strength.push_back(hand_str);
+                int hand_str = evaluate_hand(hand, board);
+                hand_strength.push_back(std::make_pair(hand_str, local));
                 local++;
             } else {
                 int local_index = index_to_local[hand_index];
@@ -359,7 +366,7 @@ std::pair<std::vector<int>, std::vector<int>> river_hand_indexer(uint64_t board)
             global++;
         }
     }
-    //std::cout << local << "\n";
+    sort(hand_strength.begin(), hand_strength.end(), hand_str_comp);
     return std::make_pair(global_to_local, hand_strength);
 }
 
@@ -399,16 +406,15 @@ void test_board_hand_indexer() {
 }
 
 
-//returns # of isomorphic boards + hands and global -> local board index mapping
-std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop) {
-    int total = 0;
+std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(uint64_t flop) {
     int local = 0;
-    std::unordered_map<int, BoardInfo> global_board_to_local;
+    std::unordered_map<int, int> global_board_to_local;
+    std::vector<BoardInfo> local_to_board;
 
     //flop
     std::pair<std::vector<int>, int> hand_info = hand_indexer(flop);
-    global_board_to_local[index_board(flop)] = BoardInfo(local, hand_info.first, hand_info.second);
-    total += hand_indexer(flop).second;
+    global_board_to_local[index_board(flop)] = local; 
+    local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second));
     local++;
 
     //turn
@@ -425,8 +431,8 @@ std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop) 
         }
 
         std::pair<std::vector<int>, int> hand_info = hand_indexer(flop);
-        global_board_to_local[index] = BoardInfo(local, hand_info.first, hand_info.second);
-        total += hand_indexer(flop).second;
+        global_board_to_local[index] = local;
+        local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second));
         local++;
 
         flop &= ~(1ULL << c4);
@@ -448,9 +454,9 @@ std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop) 
                 continue;
             }
             std::vector<int> full_hand_eval(flop);
-            std::pair<std::vector<int>, std::vector<int>> hand_info = river_hand_indexer(flop);
-            global_board_to_local[index] = BoardInfo(local, hand_info.first, hand_info.second, hand_info.second.size());
-            total += hand_indexer(flop).second;
+            std::pair<std::vector<int>, std::vector<std::pair<int, int>>> hand_info = river_hand_indexer(flop);
+            global_board_to_local[index] = local;
+            local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second, hand_info.second.size()));
             local++;
 
             flop  &= ~(1ULL << c5);
@@ -458,5 +464,5 @@ std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop) 
         flop &= ~(1ULL << c4);
     }
 
-    return std::make_pair(global_board_to_local, total);
+    return std::make_pair(global_board_to_local, local_to_board);
 }

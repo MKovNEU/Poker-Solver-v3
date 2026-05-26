@@ -11,14 +11,14 @@ struct BoardInfo {
     int local_index; //local board index;
     int num_private_hands; //num of private hands (using board cards + suit isomorphism)
     std::vector<int> global_to_local; //global -> local private hand index;
-    std::vector<int> hand_strength; //sorted hand strength of private cards (local index), only created for 
+    std::vector<std::pair<int, int>> hand_strength; //sorted hand strength of private cards (local index), only created for 
 
     BoardInfo() : local_index(-1) {}
 
-    BoardInfo(int index, std::vector<int> g2l, int num_private_hands): local_index(index), global_to_local(g2l), 
-        num_private_hands(num_private_hands), hand_strength(std::vector<int>(num_private_hands)) {}
+    BoardInfo(int index, std::vector<int>& g2l, int num_private_hands): local_index(index), global_to_local(g2l), 
+        num_private_hands(num_private_hands) {}
 
-    BoardInfo(int index, std::vector<int> g2l, std::vector<int> hand_str, int num_private_hands): local_index(index), global_to_local(g2l), 
+    BoardInfo(int index, std::vector<int>& g2l, std::vector<std::pair<int, int>>& hand_str, int num_private_hands): local_index(index), global_to_local(g2l), 
         num_private_hands(num_private_hands), hand_strength(hand_str) {}
 };
 
@@ -32,4 +32,5 @@ void test_board_indexer();
 
 void test_board_hand_indexer();
 
-std::pair<std::unordered_map<int, BoardInfo>, int> get_flop_info(uint64_t flop);
+//global -> local index, local index -> BoardInfo
+std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(uint64_t flop);

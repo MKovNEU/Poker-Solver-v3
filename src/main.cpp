@@ -4,7 +4,7 @@
 #include "include/solver/isomorpher.h"
 
 void preload() {
-    loadHandRanks("data/hand_ranks.dat");
+    load_hand_ranks("data/hand_ranks.dat");
 }
 
 int main() {
@@ -22,5 +22,5 @@ int main() {
     std::array<uint8_t, 3> cards = {0, 1, 2};
     CFR cfr = CFR(oop_range, ip_range, cards, pot, stacks, betting_sizes);
     cfr.buildTree();
-    //test_board_hand_indexer();
+
 }

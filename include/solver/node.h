@@ -5,7 +5,7 @@
 
 struct Node {
     NodeType type;
-    int board_idx;
+    int board_idx; //local index
 
     uint32_t child_begin;
     uint16_t child_count;
