@@ -7,99 +7,43 @@
 #include "include/game/undo.h"
 #include "include/enums/action_type.h"
 #include "include/solver/cfr.h"
+#include "include/solver/range.h"
 
-/*
-void get_strategy(Tree &tree, int node_idx, float* strategy) {
-    Node node = tree.nodes[node_idx];
-    uint16_t n = node.child_count;
-    uint32_t b = node.child_begin;
 
-    for (int i = 0; i < 1326; i++) {
-        float sum = 0.0f;
+void get_strategy(Tree &tree, int node_idx, float* data) {
 
-        for (int j = 0; j < n; j++) {
-            float r = tree.regrets[b + j];
-            if (r > 0.0f) sum += r;
-        }
-
-        if (sum == 0.0f) {
-            float uniform = 1.0f / n;
-            for (int j = 0; j < n; j++) {
-                strategy[i * n + j] = uniform;
-            }
-        } else {
-            float inv_sum = 1.0f / sum;
-            for (int j = 0; j < n; j++) {
-                float r = tree.regrets[b + j];
-                strategy[i * n + j] = (r > 0.0f) ? (r * inv_sum) : 0.0f;
-            }
-        }
-    }
 }
 
 
-std::array<float, 1326> traverse(Tree &tree, int node_idx, std::array<float, 1326> oop_range, std::array<float, 1326> ip_range, int current_player, int t) { 
-    Node node = tree.
-    //return util from OOP perspective
-    if (node.type == TERMINAL_NODE) {
-        
+std::array<float, 1326> traverse(Tree &tree, int node_idx, std::array<float, 1326>& oop_range, std::array<float, 1326>& ip_range, int current_player, int t) { 
+    Node node = tree.nodes[node_idx];
+    if (node.type == NodeType::TERMINAL) {
+
     } 
-    else if (node.type == CHANCE_NODE) {
-        int n = node.children.size();
-        std::array<float, 1326> ev = { 0 };
-        for (PublicNode *child : node.children) {
-            std::array<float, 1326> res = traverse(*child, oop_range, ip_range, 0, t);
-            for (int i = 0; i < 1326; i++) ev[i] += res[i];
+    else if (node.type == NodeType::CHANCE) {
+        uint32_t b = node.child_begin;
+        uint16_t n = node.child_count;
+        std::array<float, 1326> ev;
+        for (int i = 0; i < n; i++) {
+            std::array<float, 1326> curr_ev = traverse(tree, tree.children[b + i], oop_range, ip_range, 0, t);
+            for (int j = 0; j < 1326; j++) ev[j] += curr_ev[j];
         }
-        for (int i = 0; i < 1326; i++) ev[i] /= n;
+        for (int j = 0; j < 1326; j++) ev[j] /= n;
         return ev;
     }
 
-    int n = node.children.size();
-    std::vector<std::array<float, 1326>> action_utils(n);
-    std::array<float, 1326> ev = { 0 };
-    
-    std::vector<float> strategy(1326 * n);
-    get_strategy(node, n, strategy.data());
-
-    for (int i = 0; i < n; i++) {
-        std::array<float, 1326> val;
-        for (int j = 0; j < 1326; j++){
-            val[j] = (current_player ? ip_range : oop_range)[j] * strategy[j * n + i];
-        }
-
-        if (current_player) {
-            action_utils[i] = traverse(*node.children[i], oop_range, val, 1 - current_player, t);
-        } else {
-            action_utils[i] = traverse(*node.children[i], val, ip_range, 1 - current_player, t);
-        }
-        for (int j = 0; j < 1326; j++) ev[j] += strategy[j * n + i] * action_utils[i][j];
-    }
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < 1326; j++) {
-            float regret = (current_player ? -1 : 1) * (action_utils[i][j] - ev[j]);
-            node.regrets[j * n + i] += (current_player ? oop_range[j] : ip_range[j]) * regret;
-            node.strategySum[j * n + i] +=  (current_player ? ip_range[j] : oop_range[j]) * t * strategy[j * n + i];
-        }
-
-    }
-
-    return ev;
+    int num_private_hands = tree.board_info[node.board_idx].num_private_hands;
+    std::array<float, num_private_hands> 
 }
 
 void CFR::run(int iterations) {
     std::array<float, 1326> pf_oop_range = convert(oop_range); //convert range to postflop 
     std::array<float, 1326> pf_ip_range = convert(ip_range); //convert range to postflop 
-    for (const uint8_t card : flop) {
-        update_range(pf_oop_range, card);
-        update_range(pf_ip_range, card);
-    }
     for (int i = 1; i <= iterations; i++) {
+        if (i % 100 == 0) std::cout << i;
         traverse(tree, 0, pf_oop_range, pf_ip_range, 0, i); 
     }
 }
-*/
 
 
 //initial run, just builds tree for traversal

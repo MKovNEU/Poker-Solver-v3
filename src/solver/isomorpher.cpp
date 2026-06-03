@@ -173,6 +173,24 @@ void create_board_hand_config() {
     board_hand_config = offsets;
 }
 
+int indexer(std::vector<uint64_t>& groups, std::vector<int>& groups_count) {
+    int total = 0;
+    for (const int group_count : groups_count) {
+
+    }
+    
+    std::vector<int> grouped_suits(groups.size());
+    std::vector<int> ranks(total);
+
+    for (const uint64_t group : groups) {
+        for (int i = 51; i >= 0; i--) {
+            if ((group >> i) & 1) {
+                group
+            }
+        }
+    }
+}
+
 int index_board(uint64_t board) {
     if (board_config.empty()) create_board_config();
     std::vector<std::tuple<int, int, std::vector<int>>> suit_info = {std::make_tuple(0, 0, std::vector<int>{}), 
