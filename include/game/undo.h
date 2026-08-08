@@ -14,6 +14,5 @@ struct UndoInfo {
     float prev_bet;
     int num_bets;
     int street;
-    uint64_t cards;
-    uint8_t num_cards;
+    std::array<uint64_t, 3> cards;
 };

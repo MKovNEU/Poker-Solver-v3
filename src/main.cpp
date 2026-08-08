@@ -22,5 +22,7 @@ int main() {
     std::array<uint8_t, 3> cards = {0, 1, 2};
     CFR cfr = CFR(oop_range, ip_range, cards, pot, stacks, betting_sizes);
     cfr.buildTree();
-
+    cfr.run(1000);
+    //test_indexer();
+    //test_eval_hand();
 }

@@ -10,7 +10,8 @@ uint32_t add_action_node(Tree& tree, int board_idx, int num_actions) {
     uint32_t node_idx = tree.nodes.size();
 
     Node node{};
-    int local_idx = tree.global_board_to_local.at(board_idx);
+    int local_idx = 0;
+    local_idx = tree.global_board_to_local.at(board_idx);
     BoardInfo& info = tree.board_info[local_idx];
 
     node.type = NodeType::ACTION;
@@ -52,7 +53,9 @@ uint32_t add_first_river_action_node(Tree& tree, int board_idx, int num_actions,
     uint32_t node_idx = tree.nodes.size();
 
     Node node{};
-    int local_idx = tree.global_board_to_local.at(board_idx);
+    int local_idx = 0;
+    local_idx = tree.global_board_to_local.at(board_idx);
+
     BoardInfo& info = tree.board_info[local_idx];
 
     node.type = NodeType::ACTION;
@@ -78,7 +81,8 @@ uint32_t add_river_action_node(Tree& tree, int board_idx, int num_actions) {
     uint32_t node_idx = tree.nodes.size();
 
     Node node{};
-    int local_idx = tree.global_board_to_local.at(board_idx);
+    int local_idx = 0;
+    local_idx = tree.global_board_to_local.at(board_idx);
     BoardInfo& info = tree.board_info[local_idx];
 
     node.type = NodeType::ACTION;
@@ -103,7 +107,9 @@ uint32_t add_terminal_node(Tree &tree, int board_idx, float pot) {
     uint32_t node_idx = tree.nodes.size();
 
     Node node{};
-    int local_idx = tree.global_board_to_local.at(board_idx);
+    int local_idx = 0;
+    local_idx = tree.global_board_to_local.at(board_idx);
+    
     BoardInfo& info = tree.board_info[local_idx];
 
     node.type = NodeType::TERMINAL;

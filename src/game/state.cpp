@@ -18,8 +18,7 @@ UndoInfo State::move(Action &action) {
     undo.prev_bet = prev_bet;
     undo.num_bets = num_bets;
     undo.street = street;
-    undo.cards = cards.first;
-    undo.num_cards = cards.second;
+    undo.cards = cards;
 
 
     if (type == ActionType::FOLD) {
@@ -119,7 +118,8 @@ std::vector<Action> State::get_legal_actions() {
 }
 
 std::pair<uint64_t, uint8_t> State::get_outcomes() {
-    return board_indexer(cards.first);
+    uint64_t full_board = ((cards[0] | cards[1]) | cards[2]);
+    return board_indexer(full_board);
 }
 
 UndoInfo State::apply_outcome(int outcome) {
@@ -135,11 +135,16 @@ UndoInfo State::apply_outcome(int outcome) {
     undo.prev_bet = prev_bet;
     undo.num_bets = num_bets;
     undo.street = street;
-    undo.cards = cards.first;
-    undo.num_cards = cards.second;
+    undo.cards = cards;
 
-    cards.first |= (1ULL << outcome);
-    cards.second++;
+    cards[street - 1] |= (1ULL << outcome);
+    if (street != 2 && street != 3) std::cout << "here1";
+
+    if (street == 2) {
+        if ((cards[0] >> outcome) & 1) std::cout << "here2";
+    } else {
+        if ((cards[0] >> outcome) & 1 || (cards[1] >> outcome) & 1) std::cout << "here2";
+    }
 
     return undo;
 }
@@ -157,8 +162,7 @@ void State::undo(UndoInfo &undo) {
     prev_bet = undo.prev_bet;
     num_bets = undo.num_bets;
     street = undo.street;
-    cards.first = undo.cards;
-    cards.second = undo.num_cards;
+    cards = undo.cards;
 }
 
 bool State::is_terminal() {
@@ -167,7 +171,9 @@ bool State::is_terminal() {
 }
 
 bool State::is_chance() {
-    return (cards.second - 2 != street); 
+    if (street == 2 && cards[1] == 0) return true;
+    if (street == 3 && cards[2] == 0) return true;
+    return false;
 }
 
 bool State::is_river() {
@@ -175,22 +181,20 @@ bool State::is_river() {
 }
 
 uint64_t State::get_board() {
-    return cards.first;
+    return (cards[0] | cards[1] | cards[2]);
 }
 
 std::pair<std::vector<int>, int> State::get_private_hands() {
-    return hand_indexer(cards.first);
+    return hand_indexer(cards);
 }
 
 int State::get_board_index() {
-    if (cards.second == 3) {
-        return index_board(cards.first);
-    } else if (cards.second == 4) {
-        return 1755 + index_board(cards.first);
-    } else if (cards.second == 5) {
-        return 1755 + 16432 + index_board(cards.first);
+    if (cards[1] == 0) {
+        return indexer({cards[0]}, {3});
+    } else if (cards[2] == 0) {
+        return 1755 + indexer({cards[0], cards[1]}, {3, 1});
     } else {
-        std::cout << "Bug in get_board_index" << "\n";
+        return 1755 + 63193 + indexer({cards[0], cards[1], cards[2]}, {3, 1, 1});
     }
 }
 

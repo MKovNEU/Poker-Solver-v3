@@ -6,9 +6,11 @@
 #include <unordered_map>
 #include <iostream>
 #include <set>
+#include <cassert>
 
 std::unordered_map<int, int> board_config;
 std::unordered_map<int, int> board_hand_config;
+std::unordered_map<int, std::unordered_map<long long, int>> full_config;
 
 
 long long nCr(int n, int r) {
@@ -39,6 +41,13 @@ bool suit_info_comp2(std::tuple<int, int, int, std::vector<int>>& a, std::tuple<
         }
     }
     return (std::get<0>(a) > std::get<0>(b));
+}
+
+bool suit_info_comp3(const std::array<int, 5>& a, const std::array<int, 5>& b) {
+    for (int i = 0; i < 5; i++) {
+        if (a[i] == b[i]) continue;
+        else return (a[i] > b[i]);
+    }
 }
 
 bool hand_str_comp(std::pair<int, int>& a, std::pair<int, int>& b) {
@@ -173,23 +182,251 @@ void create_board_hand_config() {
     board_hand_config = offsets;
 }
 
-int indexer(std::vector<uint64_t>& groups, std::vector<int>& groups_count) {
-    int total = 0;
-    for (const int group_count : groups_count) {
+int config_size(const std::array<std::vector<int>, 4>& config) {
+    int num_groups = config[0].size();
+    int i = 0;
+    int mult = 1;
+    while (i < 4) {
+        bool done = true;
+        //true if suit has no cards
+        for (int g = 0; g < num_groups; g++) done = done && (config[i][g] == 0);
+        if (done) break;
+        int j = i + 1;
+        while (j < 4) {
+            bool equal = true;
+            for (int g = 0; g < num_groups; g++) {
+                if (config[i][g] != config[j][g]) {
+                    equal = false;
+                    break;
+                }
+            }
+            if (!equal)
+                break;
+            j++;
+        }
 
-    }
+        int size = 1;
+        int rem_cards = 13;
+        for (int k = 0; k < num_groups; k++) {
+            size *= nCr(rem_cards, config[i][k]);
+            rem_cards -= config[i][k];
+        }
+        mult *= nCr(size + (j-i) - 1, (j - i));
     
-    std::vector<int> grouped_suits(groups.size());
-    std::vector<int> ranks(total);
+        i = j;
+    }
+    return mult;
+}
 
-    for (const uint64_t group : groups) {
-        for (int i = 51; i >= 0; i--) {
-            if ((group >> i) & 1) {
-                group
+void fill_config(int s, std::array<std::vector<int>, 4>& curr_config, 
+    std::vector<std::vector<std::tuple<int, int, int, int>>>& combos, std::vector<std::array<std::vector<int>, 4>>& configs) {
+    if (s == combos.size()) {
+        configs.push_back(curr_config);
+        return;
+    }
+    for (const auto combo : combos[s]) {
+        std::array<std::vector<int>, 4> new_curr_config(curr_config);
+        new_curr_config[0].push_back(std::get<0>(combo));
+        new_curr_config[1].push_back(std::get<1>(combo));
+        new_curr_config[2].push_back(std::get<2>(combo));
+        new_curr_config[3].push_back(std::get<3>(combo));
+        fill_config(s+1, new_curr_config, combos, configs);
+    }
+}
+
+void create_config(const std::vector<int>& groups_count, int config_key) {
+    int num_groups = groups_count.size();
+    std::vector<std::vector<std::tuple<int, int, int, int>>> combos(num_groups);
+    for (int i = 0; i < num_groups; i++) {
+        int g = groups_count[i];
+        for (int s1 = g; s1 >= 0; s1--) {
+            for (int s2 = g - s1; s2 >= 0; s2--) {
+                for (int s3 = g - s1 - s2; s3 >= 0; s3--) {
+                    int s4 = g - s1 - s2 - s3;
+                    if (s4 < 0) continue;
+                    combos[i].push_back(std::make_tuple(s1, s2, s3, s4));
+                }
             }
         }
     }
+
+    std::vector<std::array<std::vector<int>, 4>> configs;
+    std::array<std::vector<int>, 4> temp;
+    fill_config(0, temp, combos, configs);
+
+    for (int i = 0; i < configs.size(); i++) {
+        std::sort(configs[i].begin(), configs[i].end(), std::greater<>());
+    }
+    std::sort(configs.begin(), configs.end(), std::greater<>());
+
+    std::unordered_map<long long, int> offsets;
+    int offset = 0;
+    for (const auto config : configs) {
+        long long key = 0; // only works if num_groups <= 4, which it always should be
+        int mult = 1;
+        for (int suit = 3; suit >= 0; suit--) {
+            for (int group = num_groups - 1; group >= 0; group--) {
+                key += mult * config[suit][group];
+                mult *= 10;
+            }
+        }
+        if (offsets.find(key) == offsets.end()) {
+            offsets[key] = offset;
+            offset += config_size(config);
+        }
+    }
+
+    full_config[config_key] = offsets;
 }
+
+int indexer(const std::vector<uint64_t>& groups, const std::vector<int>& groups_count) {
+    int config_key = 0;
+    int p = 1;
+    for (int i = 0; i < groups_count.size(); i++) {
+        config_key += groups_count[i] * p;
+        p *= 10;
+    }
+    if (full_config.find(config_key) == full_config.end()) create_config(groups_count, config_key);
+
+    int num_groups = groups.size();
+    
+    std::vector<std::array<int, 5>> grouped_suits(4); //4 is max # of groups (+1 for index place)
+    std::vector<std::array<int, 13>> ranks(4); //max 13 ranks per suit
+    std::vector<int> suit_count(4);
+
+    for (int j = 0; j < num_groups; j++) {
+        uint64_t group = groups[j];
+        for (int i = 51; i >= 0; i--) {
+            if ((group >> i) & 1) {
+                int suit = i % 4;
+                grouped_suits[suit][j]++;
+                ranks[suit][suit_count[suit]] = (i / 4); //ordered by group and within group orded by rank
+                suit_count[suit]++;
+            }
+        }
+    }
+
+    for (int suit = 0; suit < 4; suit++) {
+        int index = 0;
+        int mult = 1;
+        int num_prev_cards = 0;
+        for (int g = 0; g < num_groups; g++) {
+            int num_cards = grouped_suits[suit][g];
+            for (int i = 0; i < num_cards; i++) {
+                int rank = ranks[suit][num_prev_cards + i];
+                int true_rank = rank;
+                for (int r = 0; r < num_prev_cards; r++) {
+                    if (rank > ranks[suit][r]) true_rank--;
+                }
+                index += mult * nCr(true_rank, num_cards - i);
+            }
+            mult *= nCr(13 - num_prev_cards, num_cards);
+            num_prev_cards += num_cards;
+        }
+        grouped_suits[suit][num_groups] = index;
+    }
+
+    std::sort(grouped_suits.begin(), grouped_suits.end(), suit_info_comp3);
+    
+    int index = 0;
+    int i = 0;
+    int mult = 1;
+    while (i < 4) {
+        bool done = true;
+        //true if suit has no cards
+        for (int g = 0; g < num_groups; g++) done = done && (grouped_suits[i][g] == 0);
+        if (done) break;
+        int j = i + 1;
+        while (j < 4) {
+            bool equal = true;
+            for (int g = 0; g < num_groups; g++) {
+                if (grouped_suits[i][g] != grouped_suits[j][g]) {
+                    equal = false;
+                    break;
+                }
+            }
+            if (!equal)
+                break;
+            j++;
+        }
+
+        for (int k = i; k < j; k++) {
+            index += mult * nCr(grouped_suits[k][num_groups] + (j - k) - 1, (j - k));
+        }
+
+        int size = 1;
+        int rem_cards = 13;
+        for (int k = 0; k < num_groups; k++) {
+            size *= nCr(rem_cards, grouped_suits[i][k]);
+            rem_cards -= grouped_suits[i][k];
+        }
+        mult *= nCr(size + (j-i) - 1, (j - i));
+    
+        i = j;
+    }
+
+    long long key = 0; // only works if num_groups <= 4, which it always should be
+    int key_mult = 1;
+    for (int suit = 3; suit >= 0; suit--) {
+        for (int group = num_groups - 1; group >= 0; group--) {
+            key += key_mult * grouped_suits[suit][group];
+            key_mult *= 10;
+        }
+    }
+
+    return full_config[config_key][key] + index;
+}
+
+void test_indexer() {
+    std::unordered_map<int, int> map;
+    int count = 0;
+    int max_idx = 0;
+    for (int c1 = 0; c1 < 52; c1++) {
+        std::cout << c1 << "\n";
+        for (int c2 = c1+1; c2 < 52; c2++) {
+            for (int c3=c2+1; c3 < 52; c3++) {
+                uint64_t board = 0;
+                board |= (1ULL << c1);
+                board |= (1ULL << c2);
+                board |= (1ULL << c3);
+                
+                for (int c4 = 0; c4 < 52; c4++) {
+                    if (c4 == c1 || c4 == c2 || c4 == c3) continue;
+
+                    uint64_t turn = 0;
+                    turn |= (1ULL << c4);
+
+                    /*
+                    for (int h1 = 0; h1 < 52; h1++) {
+                        if (h1 == c1 || h1 == c2 || h1 == c3 || h1 == c4) continue;
+                        for (int h2 = h1+1; h2 < 52; h2++) {
+                            if (h2 == c1 || h2 == c2 || h2 == c3 || h2 == c4) continue;
+                            uint64_t hand = 0;
+                            hand |= (1ULL << h1);
+                            hand |= (1ULL << h2);
+
+                            int index = indexer({board, turn, hand}, {3, 1, 2});
+                            max_idx = std::max(max_idx, index);
+                            if (map.find(index) == map.end()) {
+                                count++;
+                                map[index] = 1;
+                            }
+                        }
+                    }
+                    */
+                    int index = indexer({board, turn}, {3, 1});
+                    max_idx = std::max(max_idx, index);
+                    if (map.find(index) == map.end()) {
+                        count++;
+                        map[index] = 1;
+                    }
+                }
+            }
+        }
+    } 
+    std::cout << count << " " << max_idx;
+}
+
 
 int index_board(uint64_t board) {
     if (board_config.empty()) create_board_config();
@@ -323,21 +560,40 @@ std::pair<uint64_t, uint8_t> board_indexer(uint64_t board) {
 }
 
 
-std::pair<std::vector<int>, int> hand_indexer(uint64_t board) {
+std::pair<std::vector<int>, int> hand_indexer(std::array<uint64_t, 3> board) {
     std::unordered_map<int, int> index_to_local;
     int local = 0;
     int global = 0;
     std::vector<int> global_to_local(1326);
+
+    std::vector<uint64_t> new_board;
+    for (const auto group : board) {
+        if (group != 0) new_board.push_back(group);
+    }
+    std::vector<int> group_size;
+    if (new_board.size() == 1) group_size.assign({3, 2});
+    else if (new_board.size() == 2) group_size.assign({3, 1, 2});
+    else if (new_board.size() == 3) group_size.assign({3, 1, 1, 2});
+
     for (int card_one = 0; card_one < 51; card_one++) {
         for (int card_two = card_one+1; card_two < 52; card_two++) {
-            if (((board >> card_one) & 1) || ((board >> card_two) & 1)) {
+            bool skip = false;
+            for (const auto b : new_board) {
+                if (((b >> card_one) & 1) || ((b >> card_two) & 1)) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
                 global++;
-                continue; //card in board
+                continue;
             }
             uint64_t hand = 0;
             hand |= (1ULL << card_one);
             hand |= (1ULL << card_two);
-            int hand_index = hand_board_indexer(hand, board);
+            new_board.push_back(hand);
+            int hand_index = indexer(new_board, group_size);
+            new_board.pop_back();
             //std::cout << hand_index << "\n";
             if (index_to_local.find(hand_index) == index_to_local.end()) {
                 global_to_local[global] = local;
@@ -354,37 +610,66 @@ std::pair<std::vector<int>, int> hand_indexer(uint64_t board) {
     return std::make_pair(global_to_local, local);
 }
 
-std::pair<std::vector<int>, std::vector<std::pair<int, int>>> river_hand_indexer(uint64_t board) {
+std::pair<std::vector<int>, std::vector<int>> river_hand_indexer(std::array<uint64_t, 3> board) {
     std::unordered_map<int, int> index_to_local;
     int local = 0;
     int global = 0;
     std::vector<int> global_to_local(1326);
-    std::vector<std::pair<int, int>> hand_strength;
-    for (int card_one = 0; card_one < 51; card_one++) {
-        for (int card_two = card_one+1; card_two < 52; card_two++) {
-            if (((board >> card_one) & 1) || ((board >> card_two) & 1)) {
+    std::vector<std::pair<int, int>> hand_strength_sorted(1326);
+    std::vector<int> hand_strength(1326);
+
+    std::vector<uint64_t> new_board;
+    for (const auto group : board) {
+        if (group != 0) new_board.push_back(group);
+    }
+    std::vector<int> group_size;
+    if (new_board.size() == 1) group_size.assign({3, 2});
+    else if (new_board.size() == 2) group_size.assign({3, 1, 2});
+    else if (new_board.size() == 3) group_size.assign({3, 1, 1, 2});
+
+    uint64_t full_board = 0;
+    for (const auto group : new_board) full_board |= group;
+
+    for (int card_one = 1; card_one < 52; card_one++) {
+        for (int card_two = 0; card_two < card_one; card_two++) {
+            bool skip = false;
+            for (const auto b : new_board) {
+                if (((b >> card_one) & 1) || ((b >> card_two) & 1)) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
+                hand_strength_sorted[global] = std::make_pair(-1, global);
+                hand_strength[global] = -1;
                 global++;
-                continue; //card in board
+                continue;
             }
             uint64_t hand = 0;
             hand |= (1ULL << card_one);
             hand |= (1ULL << card_two);
-            int hand_index = hand_board_indexer(hand, board);
+            new_board.push_back(hand);
+            int hand_index = indexer(new_board, group_size);
+            new_board.pop_back();
             //std::cout << hand_index << "\n";
             if (index_to_local.find(hand_index) == index_to_local.end()) {
                 global_to_local[global] = local;
                 index_to_local[hand_index] = local;
-                int hand_str = evaluate_hand(hand, board);
-                hand_strength.push_back(std::make_pair(hand_str, local));
+                int hand_str = evaluate_hand(hand, full_board);
+                hand_strength_sorted[global] = std::make_pair(hand_str, global);
+                hand_strength[global] = hand_str;
                 local++;
             } else {
                 int local_index = index_to_local[hand_index];
+                int hand_str = evaluate_hand(hand, full_board);
+                hand_strength_sorted[global] = std::make_pair(hand_str, global);
+                hand_strength[global] = hand_str;
                 global_to_local[global] = local_index;
             }
             global++;
         }
     }
-    sort(hand_strength.begin(), hand_strength.end(), hand_str_comp);
+    sort(hand_strength_sorted.begin(), hand_strength_sorted.end(), hand_str_comp);
     return std::make_pair(global_to_local, hand_strength);
 }
 
@@ -428,59 +713,105 @@ std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(ui
     int local = 0;
     std::unordered_map<int, int> global_board_to_local;
     std::vector<BoardInfo> local_to_board;
+    std::vector<uint64_t> last_cards; //cards in last deal that result in same index
+    std::vector<std::vector<int>> hand_strengths; //[local_board_index][global_hand_index]
 
     //flop
-    std::pair<std::vector<int>, int> hand_info = hand_indexer(flop);
-    global_board_to_local[index_board(flop)] = local; 
+    std::pair<std::vector<int>, int> hand_info = hand_indexer({flop});
+    global_board_to_local[indexer({flop}, {3})] = local; 
     local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second));
+    last_cards.push_back(flop);
+    hand_strengths.push_back(std::vector<int>(hand_info.second, -1));
     local++;
-
+    int total = 0;
     //turn
     for (int c4=0; c4 < 52; c4++) {
         if ((flop >> c4) & 1) continue;
-        flop |= (1ULL << c4);
+        uint64_t turn = (1ULL << c4);
+        total++;
 
-        int index = 1755 + index_board(flop); //displacement of flop index to avoid collisions
+        int index = 1755 + indexer({flop, turn}, {3, 1}); //displacement of flop index to avoid collisions
         auto it = global_board_to_local.find(index);
 
         if (it != global_board_to_local.end()) {
-            flop &= ~(1ULL << c4);
+            int local_index = global_board_to_local.at(index);
+            assert(last_cards.size() > local_index);
+            last_cards[local_index] |= (1ULL << c4);
             continue;
         }
 
-        std::pair<std::vector<int>, int> hand_info = hand_indexer(flop);
+        std::pair<std::vector<int>, int> hand_info = hand_indexer({flop, turn});
         global_board_to_local[index] = local;
         local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second));
+        last_cards.push_back(turn);
+        hand_strengths.push_back(std::vector<int>(hand_info.second, -1));
         local++;
-
-        flop &= ~(1ULL << c4);
     }
-
+    std::cout << local;
+    int turn_local = local;
     //river
     for (int c4=0; c4 < 52; c4++) {
         if ((flop >> c4) & 1) continue;
-        flop |= (1ULL << c4);
-        for (int c5=c4+1; c5 < 52; c5++) {
-            if ((flop >> c5) & 1) continue;
-            flop |= (1ULL << c5);
+        uint64_t turn = (1ULL << c4);
+        for (int c5=0; c5 < 52; c5++) {
+            if ((flop >> c5) & 1 || (turn >> c5) & 1) continue;
+            uint64_t river = (1ULL << c5);
 
-            int index = 1755 + 16432 + index_board(flop);
+            int index = 0;
+            try {
+                index = 1755 + 63193 + indexer({flop, turn, river}, {3, 1, 1});
+            } catch (const std::exception& e) {
+                std::cout << "here1";
+            }
             auto it = global_board_to_local.find(index);
 
             if (it != global_board_to_local.end()) {
-                flop &= ~(1ULL << c5);
+                int local_index = global_board_to_local.at(index);
+                assert(last_cards.size() > local_index);
+                last_cards[local_index] |= (1ULL << c5);
+                std::pair<std::vector<int>, std::vector<int>> hand_info;
+                try {
+                    hand_info = river_hand_indexer({flop, turn, river});
+                } catch (const std::exception& e) {
+                    std::cout << "here1";
+                }
+
+                //to account for different isomorphic hands when evaluing hand strength, we take the max for each hand of all isomorphic boards
+                for (int i = 0; i < hand_info.second.size(); i++) {
+                    hand_strengths[global_board_to_local.at(index)][i] = std::max(hand_strengths[global_board_to_local.at(index)][i], hand_info.second[i]);
+                }
                 continue;
             }
-            std::vector<int> full_hand_eval(flop);
-            std::pair<std::vector<int>, std::vector<std::pair<int, int>>> hand_info = river_hand_indexer(flop);
-            global_board_to_local[index] = local;
-            local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second, hand_info.second.size()));
-            local++;
 
-            flop  &= ~(1ULL << c5);
+            std::pair<std::vector<int>, std::vector<int>> hand_info;
+            try {
+                hand_info = river_hand_indexer({flop, turn, river});
+            } catch (const std::exception& e) {
+                std::cout << "here1";
+            }
+            global_board_to_local[index] = local;
+            local_to_board.push_back(BoardInfo(local, hand_info.first, hand_info.second.size()));
+            last_cards.push_back(river);
+            hand_strengths.push_back(hand_info.second);
+            local++;
         }
-        flop &= ~(1ULL << c4);
     }
 
+    for (int i = turn_local; i < local; i++) {
+        std::vector<std::pair<int, int>> hand_strength_sorted;
+        for (int j = 0; j < hand_strengths[i].size(); j++) {
+            hand_strength_sorted.push_back(std::make_pair(hand_strengths[i][j], j));
+        }
+        std::sort(hand_strength_sorted.begin(), hand_strength_sorted.end(), hand_str_comp);
+        local_to_board[i].hand_strength_sorted = hand_strength_sorted;
+        local_to_board[i].hand_strength = hand_strengths[i];
+    }
+
+
+    for (int i = 0; i < local; i++) {
+        local_to_board[i].indexing_cards = last_cards[i];
+    }
+
+    std::cout << local << "\n";
     return std::make_pair(global_board_to_local, local_to_board);
 }

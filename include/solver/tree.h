@@ -5,11 +5,13 @@
 #include "include/enums/node_type.h"
 #include "include/solver/node.h"
 #include "include/solver/isomorpher.h"
+#include "include/solver/range.h"
 
 
 struct Tree {
     std::unordered_map<int, int> global_board_to_local; //global -> local index of given boards within flop
     std::vector<BoardInfo> board_info; //local index -> boardInfo of said board
+    std::array<int, 100 * 1326> blockers; 
 
     std::vector<Node> nodes; //actual nodes in tree, accessed through nodes[node_idx]
 
@@ -22,6 +24,7 @@ struct Tree {
         auto info = get_flop_info(flop);
         global_board_to_local = info.first;
         board_info = info.second;
+        blockers = hand_blockers();
     }
 };
 
