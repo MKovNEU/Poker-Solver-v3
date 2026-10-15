@@ -5,6 +5,8 @@
 #pragma once
 
 #include<vector>
+#include <cstdint>
+#include <array>
 #include <unordered_map>
 
 struct BoardInfo {

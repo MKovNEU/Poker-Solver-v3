@@ -1,6 +1,6 @@
 #pragma once
 
-#include<vector>
+#include <cstdint>
 
 enum class ActionType : uint8_t {
     CHANCE,

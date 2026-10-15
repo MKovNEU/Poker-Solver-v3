@@ -1,6 +1,6 @@
 #pragma once
 
-#include<vector>
+#include <cstdint>
 
 enum class NodeType : uint8_t {
     ACTION,

@@ -1,0 +1,11 @@
+*.o
+*.d
+*.exe
+/solver
+/run_tests
+*.sol
+data/hand_ranks.dat
+data/preflop_equity.bin
+ui/work/
+__pycache__/
+.claude/

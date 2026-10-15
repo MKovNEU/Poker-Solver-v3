@@ -1,26 +1,36 @@
 CXX = g++
+CXXFLAGS = -std=c++20 -O3 -march=native -ffast-math -fopenmp -Wall -Wextra -I.
+LDFLAGS = -fopenmp
 
-# Added -I./lib/isomorphism here too so CXX can find the headers
-CXXFLAGS = -std=c++17 -O3 -march=native -flto -ffast-math -DNDEBUG -Wall -Wextra -I. -I./include
+ifeq ($(OS),Windows_NT)
+EXE = .exe
+endif
 
-# Replace your current flags with these temporarily
-#CFLAGS = -g -fsanitize=address -I./lib/isomorphism
-#CXXFLAGS = -std=c++17 -g -fsanitize=address -I. -I./include
+LIB_SRCS = src/core/cards.cpp src/core/hand_eval.cpp src/game/config.cpp src/game/tree.cpp \
+           src/solver/solver.cpp src/solver/explorer.cpp src/solver/protocol.cpp \
+           src/preflop/equity.cpp src/preflop/game.cpp src/preflop/solver.cpp src/preflop/explorer.cpp src/preflop/protocol.cpp
+LIB_OBJS = $(LIB_SRCS:.cpp=.o)
 
-# Removed check-main.c
-SRCS = src/main.cpp src/solver/cfr.cpp src/solver/ranges.cpp src/solver/tree_builder.cpp src/solver/isomorpher.cpp src/game/hand_eval.cpp src/game/state.cpp 
+SOLVER = solver$(EXE)
+TESTS = run_tests$(EXE)
 
-OBJS = $(SRCS:.cpp=.o)
+all: $(SOLVER) $(TESTS)
 
-TARGET = solver
+$(SOLVER): $(LIB_OBJS) src/main.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-all: $(TARGET)
+$(TESTS): $(LIB_OBJS) tests/tests.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(TARGET)
+test: $(TESTS)
+	./$(TESTS)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+-include $(LIB_OBJS:.o=.d) src/main.d tests/tests.d
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(LIB_OBJS) $(LIB_OBJS:.o=.d) src/main.o src/main.d tests/tests.o tests/tests.d $(SOLVER) $(TESTS)
+
+.PHONY: all test clean

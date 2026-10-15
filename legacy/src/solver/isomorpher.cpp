@@ -7,6 +7,9 @@
 #include <iostream>
 #include <set>
 #include <cassert>
+#include <array>
+#include <cmath>
+
 
 std::unordered_map<int, int> board_config;
 std::unordered_map<int, int> board_hand_config;
@@ -575,8 +578,8 @@ std::pair<std::vector<int>, int> hand_indexer(std::array<uint64_t, 3> board) {
     else if (new_board.size() == 2) group_size.assign({3, 1, 2});
     else if (new_board.size() == 3) group_size.assign({3, 1, 1, 2});
 
-    for (int card_one = 0; card_one < 51; card_one++) {
-        for (int card_two = card_one+1; card_two < 52; card_two++) {
+    for (int card_one = 1; card_one < 52; card_one++) {
+        for (int card_two = 0; card_two < card_one; card_two++) {
             bool skip = false;
             for (const auto b : new_board) {
                 if (((b >> card_one) & 1) || ((b >> card_two) & 1)) {
@@ -674,46 +677,12 @@ std::pair<std::vector<int>, std::vector<int>> river_hand_indexer(std::array<uint
 }
 
 
-void test_board_indexer() {
-    std::unordered_map<int, int> map;
-    for (int c1 = 0; c1 < 52; c1++) {
-        for (int c2 = c1+1; c2 < 52; c2++) {
-            for (int c3=c2+1; c3 < 52; c3++) {
-                uint64_t board = 0;
-                board |= (1ULL << c1);
-                board |= (1ULL << c2);
-                board |= (1ULL << c3);
-                int index = index_board(board);
-                if (map.find(index) != map.end()) continue;
-                map[index] = 1;
-            }
-        }
-    }   
-}
-
-void test_board_hand_indexer() {
-    std::unordered_map<int, int> map;
-    for (int c1 = 0; c1 < 52; c1++) {
-        for (int c2 = c1+1; c2 < 52; c2++) {
-            for (int c3=c2+1; c3 < 52; c3++) {
-                uint64_t board = 0;
-                board |= (1ULL << c1);
-                board |= (1ULL << c2);
-                board |= (1ULL << c3);
-                int index = index_board(board);
-                if (map.find(index) != map.end()) continue;
-                map[index] = 1;
-            }
-        }
-    }   
-}
-
-
 std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(uint64_t flop) {
     int local = 0;
     std::unordered_map<int, int> global_board_to_local;
     std::vector<BoardInfo> local_to_board;
-    std::vector<uint64_t> last_cards; //cards in last deal that result in same index
+    std::vector<uint64_t> last_cards; //cards in last deal that res ml';
+    ;'ult in same index
     std::vector<std::vector<int>> hand_strengths; //[local_board_index][global_hand_index]
 
     //flop
@@ -777,8 +746,9 @@ std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(ui
                 }
 
                 //to account for different isomorphic hands when evaluing hand strength, we take the max for each hand of all isomorphic boards
+                //in regards to some boards blocking hands from even being possible when evaluation
                 for (int i = 0; i < hand_info.second.size(); i++) {
-                    hand_strengths[global_board_to_local.at(index)][i] = std::max(hand_strengths[global_board_to_local.at(index)][i], hand_info.second[i]);
+                    hand_strengths[local_index][i] = std::max(hand_strengths[local_index][i], hand_info.second[i]);
                 }
                 continue;
             }
@@ -814,4 +784,39 @@ std::pair<std::unordered_map<int, int>, std::vector<BoardInfo>> get_flop_info(ui
 
     std::cout << local << "\n";
     return std::make_pair(global_board_to_local, local_to_board);
+}
+
+
+void test_board_indexer() {
+    std::unordered_map<int, int> map;
+    for (int c1 = 0; c1 < 52; c1++) {
+        for (int c2 = c1+1; c2 < 52; c2++) {
+            for (int c3=c2+1; c3 < 52; c3++) {
+                uint64_t board = 0;
+                board |= (1ULL << c1);
+                board |= (1ULL << c2);
+                board |= (1ULL << c3);
+                int index = index_board(board);
+                if (map.find(index) != map.end()) continue;
+                map[index] = 1;
+            }
+        }
+    }   
+}
+
+void test_board_hand_indexer() {
+    std::unordered_map<int, int> map;
+    for (int c1 = 0; c1 < 52; c1++) {
+        for (int c2 = c1+1; c2 < 52; c2++) {
+            for (int c3=c2+1; c3 < 52; c3++) {
+                uint64_t board = 0;
+                board |= (1ULL << c1);
+                board |= (1ULL << c2);
+                board |= (1ULL << c3);
+                int index = index_board(board);
+                if (map.find(index) != map.end()) continue;
+                map[index] = 1;
+            }
+        }
+    }   
 }

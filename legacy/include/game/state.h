@@ -16,12 +16,12 @@ private:
     int street;
     float prev_bet;
     int num_bets;
-    std::array<uint64_t, 3> cards;
+    std::array<uint64_t, 3> cards; //flop, turn, river
 
 
 public:
     State(std::pair<float, float> committed, std::pair<float, float> &stacks, std::vector<std::pair<float, float>> &betting_sizes, std::array<uint8_t, 3> &flop): 
-        committed(committed), comm_street(std::make_pair(0.0f, 0.0f)), stacks(stacks), last_move(ActionType::CHANCE), 
+        committed(committed), comm_street(0.0f, 0.0f), stacks(stacks), last_move(ActionType::CHANCE), 
         player(0), street(1), prev_bet(0.0f), num_bets(0), cards({0, 0, 0}) {
             for (const std::pair<float, float> &p : betting_sizes){
                 Action action(p.first, p.second);

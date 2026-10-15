@@ -1,0 +1,25 @@
+# 6-max cash game, 100bb deep. Chips are big blinds. Run with: solver examples/preflop_6max.txt --preflop
+players = 6                  # UTG HJ CO BTN SB BB
+stack = 100
+sb = 0.5
+ante = 0
+
+open = 2.5                   # first raise, raise to (bb)
+sb_open = 3                  # first raise from the small blind
+limp = sb                    # none | sb (complete when folded to) | all
+iso = 3.5                    # raise over a limp
+threebet_ip = 3x             # re-raises: multiple of the bet faced, by position against the raiser
+threebet_oop = 4x
+squeeze = 1x                 # plus this many opens for each caller in between
+fourbet_ip = 2.25x
+fourbet_oop = 2.5x
+allin_raise = 4              # the 5-bet is all-in
+allin_threshold = 40%        # any raise above 40% of the stack is all-in
+
+realization = 0.7            # OOP realizes 70% as well as IP in deep pots (SPR >= 8), 100% at SPR 1
+realization_spr = 8
+playability = 1              # suited / connected hands realize more, offsuit gappers less (0 = off)
+
+iterations = 1000
+target_exploitability = 1    # mbb per hand per player (6-max levels off around 1.3)
+check_every = 25

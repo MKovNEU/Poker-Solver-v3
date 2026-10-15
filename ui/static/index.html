@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Solver</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Poker Solver</div>
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-view="preflop">Preflop</button>
+    <span class="tab-sep"></span>
+    <button class="tab active" data-view="setup">Setup</button>
+    <button class="tab" data-view="solve" disabled>Solve</button>
+    <button class="tab" data-view="strategy" disabled>Strategy</button>
+  </nav>
+  <div class="pill" id="status-pill">Idle</div>
+</header>
+
+<main>
+  <!-- ------------------------------------------------------------ preflop -->
+  <section class="view" id="view-preflop" hidden>
+    <details class="panel pf-settings" id="pf-settings" open>
+      <summary><h2>Preflop game</h2><span class="muted" id="pf-brief"></span></summary>
+      <div class="pf-fields">
+        <label class="field"><span>Players</span>
+          <select id="pf-players"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+        <label class="field"><span>Stack <span class="muted">bb</span></span><input type="number" id="pf-stack" min="2" step="5"></label>
+        <label class="field"><span>Ante <span class="muted">bb each</span></span><input type="number" id="pf-ante" min="0" step="0.05"></label>
+        <label class="field"><span>Open <span class="muted">to bb</span></span><input type="number" id="pf-open" min="1.5" step="0.25"></label>
+        <label class="field"><span>SB open <span class="muted">to bb</span></span><input type="number" id="pf-sb_open" min="1.5" step="0.25"></label>
+        <label class="field"><span>Limping</span>
+          <select id="pf-limp"><option value="none">Nobody</option><option value="sb">SB completes</option><option value="all">Anyone</option></select></label>
+        <label class="field"><span>Raise vs limp <span class="muted">to bb</span></span><input type="number" id="pf-iso" min="1.5" step="0.25"></label>
+        <label class="field"><span>3-bet IP <span class="muted">× bet</span></span><input type="number" id="pf-threebet_ip" min="1.5" step="0.25"></label>
+        <label class="field"><span>3-bet OOP <span class="muted">× bet</span></span><input type="number" id="pf-threebet_oop" min="1.5" step="0.25"></label>
+        <label class="field"><span>Squeeze <span class="muted">+× per caller</span></span><input type="number" id="pf-squeeze" min="0" step="0.25"></label>
+        <label class="field"><span>4-bet IP <span class="muted">× bet</span></span><input type="number" id="pf-fourbet_ip" min="1.5" step="0.05"></label>
+        <label class="field"><span>4-bet OOP <span class="muted">× bet</span></span><input type="number" id="pf-fourbet_oop" min="1.5" step="0.05"></label>
+        <label class="field"><span>All-in is the</span>
+          <select id="pf-allin_raise"><option value="1">open</option><option value="2">3-bet</option><option value="3">4-bet</option><option value="4">5-bet</option><option value="5">6-bet</option></select></label>
+        <label class="field"><span>Jam above <span class="muted">% of stack</span></span><input type="number" id="pf-allin_threshold" min="1" max="100" step="5"></label>
+        <label class="field"><span>OOP realization <span class="muted">vs IP</span></span><input type="number" id="pf-realization" min="0.1" max="1" step="0.05"></label>
+        <label class="field"><span>Full from SPR</span><input type="number" id="pf-realization_spr" min="1.5" step="1"></label>
+        <label class="field"><span>Playability</span><input type="number" id="pf-playability" min="0" max="3" step="0.25"></label>
+        <label class="field"><span>Target <span class="muted">mbb/hand</span></span><input type="number" id="pf-target" min="0" step="0.25"></label>
+        <label class="field"><span>Max iterations</span><input type="number" id="pf-iterations" min="10" step="100"></label>
+      </div>
+      <p class="hint">Hands that reach the flop are valued by all-in equity, adjusted for how well each realizes it: OOP gets
+        <i>OOP realization</i> of IP's share in deep pots, and suited / connected hands more than offsuit gappers
+        (<i>playability</i>). Both fade out towards SPR 1. Calls that would make the flop multiway aren't offered, so every
+        flop is heads-up and can go straight to the postflop solver.</p>
+      <div class="pf-foot">
+        <label class="inline">Example <select id="pf-example"><option value="">Load…</option></select></label>
+        <button class="primary" id="pf-solve">Solve preflop</button>
+        <div class="progress" id="pf-progress" hidden><i></i></div>
+        <span class="pf-status" id="pf-status"></span>
+      </div>
+      <div class="error" id="pf-error"></div>
+    </details>
+
+    <div id="pf-nav" hidden>
+      <div class="line-bar" id="pf-line"></div>
+      <div class="strategy">
+        <div class="strategy-main">
+          <div class="spot-head" id="pf-head"></div>
+          <div class="mode-row">
+            <div class="seg" id="pf-mode">
+              <button class="on" data-mode="strategy">Strategy</button>
+              <button data-mode="range">Ranges</button>
+            </div>
+            <div class="seg" id="pf-seat" hidden></div>
+            <span class="loading" id="pf-loading" hidden>Loading…</span>
+          </div>
+          <div class="grid strat" id="pf-grid"></div>
+          <div class="error" id="pf-nav-error"></div>
+        </div>
+        <div class="strategy-side">
+          <div class="panel" id="pf-summary"></div>
+          <div class="panel" id="pf-detail"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ setup -->
+  <section class="view" id="view-setup">
+    <div class="setup-note" id="setup-note" hidden></div>
+    <div class="setup">
+      <div class="panel ranges">
+        <div class="panel-head">
+          <div class="seg" id="range-player">
+            <button class="on" data-p="0">OOP range</button>
+            <button data-p="1">IP range</button>
+          </div>
+          <div class="tools">
+            <label class="weight">Paint weight
+              <input type="range" id="paint-weight" min="5" max="100" step="5" value="100">
+              <span id="paint-weight-val">100%</span>
+            </label>
+            <button class="ghost" id="range-all">All</button>
+            <button class="ghost" id="range-clear">Clear</button>
+          </div>
+        </div>
+        <div class="grid editor" id="range-grid"></div>
+        <div class="range-foot">
+          <span id="range-combos"></span>
+          <span class="muted">Click or drag over hands. Clicking a filled hand at the same weight removes it.</span>
+        </div>
+        <label class="field-label" for="range-text">Range text <span class="muted">(PioSolver syntax: 22+, A2s+, KTo-K8o, AhKh, AJo:0.5)</span></label>
+        <textarea id="range-text" spellcheck="false" rows="3"></textarea>
+        <div class="error" id="range-error"></div>
+      </div>
+
+      <div class="side">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Spot</h2>
+            <label class="inline">Example
+              <select id="example-select"><option value="">Load…</option></select>
+            </label>
+          </div>
+          <div class="board-row">
+            <div class="board-cards" id="board-cards"></div>
+            <div class="board-actions">
+              <button class="ghost" id="board-random">Random flop</button>
+              <button class="ghost" id="board-clear">Clear</button>
+            </div>
+          </div>
+          <div class="deck" id="board-deck"></div>
+          <div class="row3">
+            <label class="field"><span>Pot <span class="muted">bb</span></span><input type="number" id="pot" min="0" step="0.5"></label>
+            <label class="field"><span>Effective stack <span class="muted">bb behind</span></span><input type="number" id="stack" min="0" step="0.5"></label>
+            <div class="field readout"><span>SPR</span><strong id="spr">–</strong></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Bet sizes</h2></div>
+          <table class="sizes">
+            <thead>
+              <tr><th></th><th>OOP bet</th><th>OOP raise</th><th>IP bet</th><th>IP raise</th></tr>
+            </thead>
+            <tbody id="sizes-body"></tbody>
+          </table>
+          <p class="hint">Comma separated. <b>33%</b> of pot, <b>3x</b> raise to 3× the bet faced, <b>10c</b> chips, <b>a</b> all-in. Leave a box empty and that player never bets / raises there.</p>
+          <div class="row3">
+            <label class="field"><span>Raises per street <span class="muted">after the bet</span></span><input type="number" id="max-raises" min="0" max="6" step="1"></label>
+            <label class="field"><span>Add all-in <span class="muted">≤ × pot</span></span><input type="number" id="add-allin" min="0" step="0.1"></label>
+            <label class="field"><span>Force all-in <span class="muted">&lt; × pot left</span></span><input type="number" id="force-allin" min="0" step="0.05"></label>
+          </div>
+        </div>
+
+        <details class="panel advanced">
+          <summary>Solver settings</summary>
+          <div class="row3">
+            <label class="field"><span>Target <span class="muted">% of pot</span></span><input type="number" id="target" min="0" step="0.05"></label>
+            <label class="field"><span>Max iterations</span><input type="number" id="iterations" min="1" step="50"></label>
+            <label class="field"><span>Check every <span class="muted">iterations</span></span><input type="number" id="check-every" min="1" step="1"></label>
+          </div>
+          <div class="row3">
+            <label class="field"><span>Threads <span class="muted">0 = all</span></span><input type="number" id="threads" min="0" step="1"></label>
+            <label class="check"><input type="checkbox" id="isomorphism"> Suit isomorphism</label>
+            <label class="check"><input type="checkbox" id="compress"> 16-bit storage</label>
+          </div>
+        </details>
+
+        <div class="panel run">
+          <div class="run-buttons">
+            <button class="ghost" id="check-tree">Check tree size</button>
+            <button class="primary" id="run">Run solver</button>
+          </div>
+          <div id="tree-summary" class="tree-summary"></div>
+          <div class="error" id="setup-error"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ solve -->
+  <section class="view" id="view-solve" hidden>
+    <div class="tiles">
+      <div class="tile hero">
+        <div class="tile-label">Exploitability</div>
+        <div class="tile-value" id="t-expl">–</div>
+        <div class="tile-sub" id="t-expl-sub"></div>
+      </div>
+      <div class="tile"><div class="tile-label">Iteration</div><div class="tile-value" id="t-iter">–</div><div class="tile-sub" id="t-iter-sub"></div></div>
+      <div class="tile"><div class="tile-label">Elapsed</div><div class="tile-value" id="t-time">–</div><div class="tile-sub" id="t-speed"></div></div>
+      <div class="tile"><div class="tile-label">Tree</div><div class="tile-value" id="t-tree">–</div><div class="tile-sub" id="t-tree-sub"></div></div>
+    </div>
+    <div class="panel chart-panel">
+      <div class="panel-head">
+        <h2>Exploitability over time <span class="muted">% of pot, log scale</span></h2>
+        <div class="solve-buttons">
+          <button class="ghost" id="stop">Stop</button>
+          <span class="continue" id="continue-box" hidden>
+            <label class="inline">to <input type="number" id="continue-target" step="0.05" min="0"> %</label>
+            <button class="ghost" id="continue">Keep solving</button>
+          </span>
+          <button class="primary" id="open-strategy" hidden>Open strategy</button>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap">
+        <svg id="chart" role="img" aria-label="Exploitability, percent of pot, over solve time"></svg>
+        <div class="tooltip" id="chart-tip" hidden></div>
+      </div>
+      <div class="solve-result" id="solve-result"></div>
+      <details class="table-view">
+        <summary>Table view</summary>
+        <table><thead><tr><th>Iteration</th><th>Time</th><th>Exploitability</th><th>Chips</th></tr></thead><tbody id="progress-table"></tbody></table>
+      </details>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ strategy -->
+  <section class="view" id="view-strategy" hidden>
+    <div class="line-bar" id="line-bar"></div>
+    <div class="strategy">
+      <div class="strategy-main">
+        <div class="spot-head" id="spot-head"></div>
+        <div class="deal" id="deal" hidden></div>
+        <div class="mode-row">
+          <div class="seg" id="mode-seg">
+            <button class="on" data-mode="strategy">Strategy</button>
+            <button data-mode="range">Ranges</button>
+            <button data-mode="ev">EV</button>
+          </div>
+          <div class="seg" id="player-seg" hidden>
+            <button class="on" data-p="0">OOP</button>
+            <button data-p="1">IP</button>
+          </div>
+          <span class="loading" id="nav-loading" hidden>Loading…</span>
+        </div>
+        <div class="grid strat" id="strat-grid"></div>
+        <div class="error" id="nav-error"></div>
+      </div>
+      <div class="strategy-side">
+        <div class="panel" id="summary"></div>
+        <div class="panel" id="detail"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

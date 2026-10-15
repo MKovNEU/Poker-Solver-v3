@@ -9,7 +9,7 @@
 #include "include/solver/cfr.h"
 #include "include/solver/range.h"
 
-
+/*
 void get_strategy(Tree &tree, int node_idx, std::vector<int>&data, int nph, int na) { //num private hands, num actions
     Node node = tree.nodes[node_idx];
     for (int hand = 0; hand < nph; hand++) {
@@ -130,7 +130,7 @@ void CFR::run(int iterations) {
 }
 
 
-
+*/
 //initial run, just builds tree for traversal
 void build_run(Tree &tree, State &game_state, uint32_t parent_idx, uint32_t parent_child_begin, int action_idx, int depth) {
     if (tree.nodes.size() % 1000 == 0) std::cout << tree.nodes.size() << "\n";

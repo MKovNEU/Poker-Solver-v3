@@ -1,0 +1,14 @@
+# River spot, polarized bettor vs bluff catchers.
+board = Kc 9s 7h 3d 2c
+pot = 20
+stack = 80
+
+oop_range = 99,77,33,K9s,K7s,65s,64s,54s,T8s,J8s,QJs,AKo:0.5
+ip_range = AK,KQ,KJ,KT,QQ,JJ,TT,A9s,98s
+
+river_bet = 33%, 75%, 150%, a
+river_raise = 2.5x
+max_raises = 2
+
+iterations = 2000
+target_exploitability = 0.1

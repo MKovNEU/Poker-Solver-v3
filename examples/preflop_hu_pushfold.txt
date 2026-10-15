@@ -1,0 +1,9 @@
+# heads-up push / fold at 10bb: the small blind shoves or folds, the big blind calls or folds
+players = 2
+stack = 10
+limp = none
+allin_raise = 1              # the first raise is all-in
+
+iterations = 3000
+target_exploitability = 0.05
+check_every = 50

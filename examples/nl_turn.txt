@@ -1,0 +1,16 @@
+# Turn spot: flop went check, bet 33%, call.
+board = Qs Jh 2c 7d
+pot = 9.13
+stack = 95.68
+
+oop_range = 22-QQ,A2s-AQs,K9s+,Q9s+,J9s+,T8s+,97s+,86s+,75s+,64s+,54s,AJo,KTo+,QTo+,JTo
+ip_range = 22+,A2s+,K9s+,Q9s+,J9s+,T8s+,97s+,86s+,76s,65s,ATo+,KTo+,QTo+,JTo
+
+turn_bet = 50%, 100%
+turn_raise = 3x
+river_bet = 50%, 100%
+river_raise = 3x
+max_raises = 2
+
+iterations = 1000
+target_exploitability = 0.3

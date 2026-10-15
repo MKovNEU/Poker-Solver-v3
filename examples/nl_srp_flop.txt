@@ -1,0 +1,19 @@
+# No-limit single raised pot, BTN (IP) opened 2.5bb, BB (OOP) called. Chips are big blinds.
+board = Qs Jh 2c
+pot = 5.5
+stack = 97.5
+
+oop_range = 22-QQ,A2s-AQs,K2s+,Q4s+,J6s+,T6s+,96s+,85s+,74s+,63s+,53s+,43s,A8o-AJo,KTo+,QTo+,JTo,T9o,98o
+ip_range = 22+,A2s+,K2s+,Q5s+,J7s+,T7s+,96s+,85s+,75s+,64s+,54s,A5o+,K9o+,Q9o+,J9o+,T9o
+
+# sizes: % of pot, x = raise to a multiple of the bet faced, c = chips, a = all-in
+flop_bet = 33%, 75%
+flop_raise = 3x
+turn_bet = 66%, 125%
+turn_raise = 3x
+river_bet = 66%, 125%
+river_raise = 3x
+max_raises = 2
+
+iterations = 1000
+target_exploitability = 0.5

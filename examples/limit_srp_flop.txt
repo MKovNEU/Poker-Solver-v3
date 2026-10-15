@@ -1,0 +1,20 @@
+# Heads-up fixed-limit hold'em, BTN raised, BB called: 2 small bets in the pot. 1 small bet = 2 chips.
+# Limit is just fixed chip sizes ('c'), a cap of 4 bets per street (bet + 3 raises) and no all-in.
+board = Ks 8d 4c
+pot = 4
+stack = 1000
+
+oop_range = 22+,A2+,K2+,Q2+,J2+,T2s+,T6o+,92s+,96o+,82s+,86o+,72s+,75o+,62s+,64o+,52s+,54o,42s+,32s
+ip_range = 22+,A2+,K2+,Q2+,J4+,T6+,96+,85+,75+,64s+,53s+,43s
+
+flop_bet = 2c
+flop_raise = 2c
+turn_bet = 4c
+turn_raise = 4c
+river_bet = 4c
+river_raise = 4c
+max_raises = 3
+add_allin_threshold = 0
+
+iterations = 1000
+target_exploitability = 0.2

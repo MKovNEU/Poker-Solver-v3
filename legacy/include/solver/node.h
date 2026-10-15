@@ -1,6 +1,5 @@
 #pragma once
 
-#include<vector>
 #include "include/enums/node_type.h"
 
 struct Node {
